@@ -106,12 +106,29 @@ class readgdf:
                 filen+=1
                 print("opening new file %s"%(xf[filen]))
 
-                
-
-                            
         return(xout,yout)
         
-        
+
+    def read_beamlets(self,i0,N,beamlets=[8,9,10]):
+        """
+        use fft to combine beamlets
+        """
+        n_beamlets=len(beamlets)
+        beamlets=n.array(beamlets,dtype=int)
+        n_samples=n_beamlets*N
+        x=n.zeros(n_samples,dtype=n.complex64)
+        y=n.zeros(n_samples,dtype=n.complex64)
+
+        X=n.zeros([N,n_beamlets],dtype=n.complex64)
+        Y=n.zeros([N,n_beamlets],dtype=n.complex64)
+
+        for i in range(n_beamlets):
+            X[:,i],Y[:,i]=self.read(i0,N,beamlet=beamlets[i])
+        XX=n.fft.ifft(X,axis=1)
+        YY=n.fft.ifft(Y,axis=1)
+        xout=XX.reshape((n_samples,))
+        yout=YY.reshape((n_samples,))
+        return(xout,yout)
 
 if __name__ == "__main__":
     dirname="/data1/maarsy3d/data-1719568825.7878"
