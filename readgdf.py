@@ -19,6 +19,7 @@ class readgdf:
         self.beamlet_y_files=[]
         self.min_sample=[]
         self.max_sample=[]
+        self.debug=False
         for bi,bd in enumerate(self.beamlet_dirs):
             # extract beamlet number
             self.beamlets.append(int(re.search(".*/(...)$",bd).group(1)))
@@ -34,9 +35,10 @@ class readgdf:
                 self.max_sample.append((len(xf)-1)*self.n_per_file)
             else:
                 self.max_sample.append(0)
-            print("beamlet %d 0-%d samples available"%(self.beamlets[bi],self.max_sample[bi]))
-        
-        print(self.beamlets)
+            if self.debug:
+                print("beamlet %d 0-%d samples available"%(self.beamlets[bi],self.max_sample[bi]))
+        if self.debug:
+            print(self.beamlets)
         self.beamlet_idx_to_beamletdir=n.argsort(n.array(self.beamlets))
 
     def get_bounds(self,beamlet):
@@ -46,21 +48,24 @@ class readgdf:
         """
         read N samples starting at sample i0
         """
-        print("read %d samples"%(N))
+        if self.debug:
+            print("read %d samples"%(N))
         xf=self.beamlet_x_files[self.beamlet_idx_to_beamletdir[beamlet]]
         yf=self.beamlet_y_files[self.beamlet_idx_to_beamletdir[beamlet]]
 
         
         filen=int(n.floor(i0/self.n_per_file))
-        print(xf[filen])
+        if self.debug:
+            print(xf[filen])
 
         # first sample index
         idx0=i0-int(n.floor(i0/self.n_per_file))*self.n_per_file
 
         n_left_in_file=self.n_per_file-idx0
-        
-        print(idx0)
-        print(n_left_in_file)
+
+        if self.debug:
+            print(idx0)
+            print(n_left_in_file)
 
         xout=n.zeros(N,dtype=n.complex64)
         yout=n.zeros(N,dtype=n.complex64)
@@ -69,13 +74,15 @@ class readgdf:
         outi=0
         while n_left != 0:
             if filen >= len(xf):
-                print("out of bounds. no more data left")
+                if self.debug:
+                    print("out of bounds. no more data left")
                 raise Exception
             
             x=n.fromfile(xf[filen],dtype="<i2")
             y=n.fromfile(yf[filen],dtype="<i2")
 
-            print("outi %d %d samples left %d in file"%(outi,n_left,n_left_in_file))
+            if self.debug:
+                print("outi %d %d samples left %d in file"%(outi,n_left,n_left_in_file))
             if n_left_in_file > n_left:
                 # there is more left in the file than we need
 #                print(len(x[idx0:(idx0+n_left)]))
@@ -87,7 +94,8 @@ class readgdf:
                 n_left-=n_left
                 
             elif n_left_in_file <= n_left:
-                print("outi %d idx0 %d"%(outi,idx0))
+                if self.debug:
+                    print("outi %d idx0 %d"%(outi,idx0))
                 # there is more less left in the file than we need
                 # read everything
                 file_idx_re = n.arange(idx0,self.n_per_file)*2
@@ -104,7 +112,8 @@ class readgdf:
                 # we have a whole new file
                 n_left_in_file=self.n_per_file
                 filen+=1
-                print("opening new file %s"%(xf[filen]))
+                if self.debug:
+                    print("opening new file %s"%(xf[filen]))
 
         return(xout,yout)
         

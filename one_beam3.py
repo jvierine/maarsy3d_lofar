@@ -5,6 +5,14 @@ import scipy.interpolate as sint
 import h5py
 import stuffr
 
+from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
+size = comm.Get_size()
+rank = comm.Get_rank()
+print("comm rank %d size %d"%(rank,size))
+
+
 print(readgdf.freq(n.arange(265,284))/1e6)
 
 dfreq=(53.515625-53.5)*1e6
@@ -111,12 +119,13 @@ if __name__ == "__main__":
     samples_per_ipp=ipp*sr
     n_rg=int(n.floor(n_beamlets*samples_per_ipp))
 
-    n_ipp=512
+    n_ipp=1024
+    n_ipph=512
     n_frames=20
 
 
     # 2*f*v/3e8 = df
-    dops=n.fft.fftshift(n.fft.fftfreq(n_ipp,d=1e-3))
+    dops=n.fft.fftshift(n.fft.fftfreq(n_ipph,d=2*1e-3))
     # use only these indices
     fidx=n.where(n.abs(dops)<50)[0]
 
@@ -128,12 +137,12 @@ if __name__ == "__main__":
     ut0=1719568825.962887763977
 
     ipp=1e-3
-    for ti in range(n_timesteps):
+    for ti in range(rank,n_timesteps,size):
         this_ut0=ti*n_ipp*ipp*n_frames + ut0
-        X=n.zeros([2,2,n_ipp,n_rgo],dtype=n.complex64)
-        S=n.zeros([2,2,n_ipp,n_rgo],dtype=n.float32)
+        S=n.zeros([2,2,n_ipph,n_rgo],dtype=n.float32)
 
         for fi in range(n_frames):
+            X=n.zeros([2,2,n_ipph,n_rgo],dtype=n.complex64)
             fi0=int(n.round(fi*n_ipp*samples_per_ipp+ti*n_frames*n_ipp*samples_per_ipp))
 
             # read all ipps
@@ -150,14 +159,14 @@ if __name__ == "__main__":
             i0=0.0
 
             codei=0
-            for i in range(n_ipp):
-                X[0,0,i,:]=n.fft.ifft(codes_f[codei%2]*n.fft.fft(x[int(i0):(int(i0)+n_rgo)]))
-                X[1,0,i,:]=n.fft.ifft(codes_f[codei%2]*n.fft.fft(y[int(i0):(int(i0)+n_rgo)]))
-                X[0,1,i,:]=n.fft.ifft(codes_f[(codei+1)%2]*n.fft.fft(x[int(i0):(int(i0)+n_rgo)])) 
-                X[1,1,i,:]=n.fft.ifft(codes_f[(codei+1)%2]*n.fft.fft(y[int(i0):(int(i0)+n_rgo)]))
-
-                codei+=1
-                i0+=n_rgo
+            for i in range(int(n_ipph)):
+                for j in range(2):
+                    X[0,0,i,:]+=n.fft.ifft(codes_f[codei%2]*n.fft.fft(x[int(i0):(int(i0)+n_rgo)]))
+                    X[1,0,i,:]+=n.fft.ifft(codes_f[codei%2]*n.fft.fft(y[int(i0):(int(i0)+n_rgo)]))
+                    X[0,1,i,:]+=n.fft.ifft(codes_f[(codei+1)%2]*n.fft.fft(x[int(i0):(int(i0)+n_rgo)])) 
+                    X[1,1,i,:]+=n.fft.ifft(codes_f[(codei+1)%2]*n.fft.fft(y[int(i0):(int(i0)+n_rgo)]))
+                    codei+=1
+                    i0+=n_rgo
 
             for i in range(n_rgo):
                 for poli in range(2):
