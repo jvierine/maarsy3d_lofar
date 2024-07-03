@@ -17,22 +17,45 @@ class readgdf:
         self.beamlets=[]
         self.beamlet_x_files=[]
         self.beamlet_y_files=[]
+        self.beamlet_x_filetables=[]
+        self.beamlet_y_filetables=[]
+        self.beamlet_x_filenums=[]
+        self.beamlet_y_filenums=[]
+        
         self.min_sample=[]
         self.max_sample=[]
-        self.debug=False
+        self.debug=True
         for bi,bd in enumerate(self.beamlet_dirs):
             # extract beamlet number
             self.beamlets.append(int(re.search(".*/(...)$",bd).group(1)))
             xf=glob.glob("%s/x/data*gdf"%(bd))
             xf.sort()
+            filetables_x={}
+            filenums_x=[]
+            for fi in range(len(xf)):
+                filenum=int(re.search(".*/data-(......).gdf$",xf[fi]).group(1))-1
+                filetables_x[filenum]=xf[fi]
+                filenums_x.append(filenum)
+                
             self.beamlet_x_files.append(xf)
-            yf=glob.glob("%s/y/data*gdf"%(bd))
+            yf=glob.glob("%s/y/data*gdf"%(bd))            
             yf.sort()
+            filetables_y={}
+            filenums_y=[]
+            for fi in range(len(yf)):
+                filenum=int(re.search(".*/data-(......).gdf$",yf[fi]).group(1))-1
+                filetables_y[filenum]=yf[fi]
+                filenums_y.append(filenum)
+                
+            self.beamlet_x_filetables.append(filetables_x)
+            self.beamlet_y_filetables.append(filetables_y)            
+            
             self.beamlet_y_files.append(yf)
-            self.min_sample.append(0)
+            
+            self.min_sample.append(n.min(filenums_x))
             # the last file will be borked
             if len(xf)>0:
-                self.max_sample.append((len(xf)-1)*self.n_per_file)
+                self.max_sample.append((n.max(filenums_x)-1)*self.n_per_file)
             else:
                 self.max_sample.append(0)
             if self.debug:
@@ -50,8 +73,8 @@ class readgdf:
         """
         if self.debug:
             print("read %d samples"%(N))
-        xf=self.beamlet_x_files[self.beamlet_idx_to_beamletdir[beamlet]]
-        yf=self.beamlet_y_files[self.beamlet_idx_to_beamletdir[beamlet]]
+        xf=self.beamlet_x_filetables[self.beamlet_idx_to_beamletdir[beamlet]]
+        yf=self.beamlet_y_filetables[self.beamlet_idx_to_beamletdir[beamlet]]
 
         
         filen=int(n.floor(i0/self.n_per_file))
@@ -77,9 +100,18 @@ class readgdf:
                 if self.debug:
                     print("out of bounds. no more data left")
                 raise Exception
+
+            if filen in xf.keys():
+                x=n.fromfile(xf[filen],dtype="<i2")
+            else:
+                print("file %d not found!"%(filen))
+                x=n.zeros(2*self.n_per_file,dtype="<i2")
+            if filen in yf.keys():
+                y=n.fromfile(yf[filen],dtype="<i2")
+            else:
+                print("file %d not found!"%(filen))
+                y=n.zeros(2*self.n_per_file,dtype="<i2")                
             
-            x=n.fromfile(xf[filen],dtype="<i2")
-            y=n.fromfile(yf[filen],dtype="<i2")
 
             if self.debug:
                 print("outi %d %d samples left %d in file"%(outi,n_left,n_left_in_file))
@@ -140,10 +172,10 @@ class readgdf:
         return(xout,yout)
 
 if __name__ == "__main__":
-    dirname="/data1/maarsy3d/data-1719568825.7878"
+    dirname="/data1/maarsy3d/imaging/data-1719924302.3445"
     d=readgdf(dirname)
     print(d.get_bounds(0))
-    x,y=d.read(10,1000000)
+    x,y=d.read_beamlets(10,1000000,beamlets=[1,2,0])
     plt.subplot(121)
     plt.plot(x.real)
     plt.plot(x.imag)

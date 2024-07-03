@@ -4,9 +4,16 @@ import readgdf
 import scipy.interpolate as sint
 import h5py
 import stuffr
+import scipy.signal as ss
+
+#
+# Analyze LOFAR measurements of MAARSY using the 16-bit complementary code,
+# 1 ms IPP and 2 us bit length (meso17)
+#
 
 from mpi4py import MPI
 
+# use MPI to paralellize the processing steps
 comm = MPI.COMM_WORLD
 size = comm.Get_size()
 rank = comm.Get_rank()
@@ -83,7 +90,7 @@ def get_codes(interp=0,plot_filtered_code=False):
     return(codes)
 
 
-def resample(z,sr_in=3*195312.5,sr_out=500e3):
+def resample(z,sr_in=3*195312.5,sr_out=0.5e6):
     tin=n.arange(len(z))/sr_in
     n_in=len(z)
     T_max=n_in/sr_in
@@ -101,11 +108,14 @@ if __name__ == "__main__":
     #beamctl --antennaset=LBA_INNER --band=30_90 --rcus=0:95 --subbands=265:284 --beamlets=0:19 --digdir=1.0472,0.96,AZELGEO &
 #    beamlets=[10,8,9]
 
+    # number of samples per ipp in the resampled data
+    n_rgo=500
+    rg=0.3
 
-    codes=get_codes(interp=0,plot_filtered_code=True)
+    codes=get_codes(interp=0,plot_filtered_code=False)
     codes_f=[]
-    codes_f.append(n.conj(n.fft.fft(codes[0],500)))
-    codes_f.append(n.conj(n.fft.fft(codes[1],500)))
+    codes_f.append(n.conj(n.fft.fft(codes[0],n_rgo)))
+    codes_f.append(n.conj(n.fft.fft(codes[1],n_rgo)))
     
     beamlets=[9,10,8]    
     dirname="/data1/maarsy3d/data-1719568825.7878"
@@ -123,16 +133,12 @@ if __name__ == "__main__":
     n_ipph=512
     n_frames=20
 
-
     # 2*f*v/3e8 = df
     dops=n.fft.fftshift(n.fft.fftfreq(n_ipph,d=2*1e-3))
     # use only these indices
     fidx=n.where(n.abs(dops)<50)[0]
 
     n_timesteps=int(n.floor((b[1]-b[0])/(n_ipp*n_frames*samples_per_ipp)))
-
-    # interpolated ipp
-    n_rgo=500
 
     ut0=1719568825.962887763977
 
@@ -186,7 +192,7 @@ if __name__ == "__main__":
 
         plt.figure(figsize=(2*8,2*6.4))
         plt.subplot(221)
-        plt.pcolormesh(dops,n.arange(n_rgo)*0.6,dB[0,0,:,:].T,vmin=db0)
+        plt.pcolormesh(dops,n.arange(n_rgo)*rg,dB[0,0,:,:].T,vmin=db0)
         cb=plt.colorbar()
         cb.set_label("SNR (dB)")
         plt.xlim([-50,50])
@@ -195,7 +201,7 @@ if __name__ == "__main__":
         plt.ylabel("Total range (km)")
 
         plt.subplot(222)
-        plt.pcolormesh(dops,n.arange(n_rgo)*0.6,dB[1,0,:,:].T,vmin=db0)
+        plt.pcolormesh(dops,n.arange(n_rgo)*rg,dB[1,0,:,:].T,vmin=db0)
         cb=plt.colorbar()
         cb.set_label("SNR (dB)")
         plt.xlim([-50,50])
@@ -204,7 +210,7 @@ if __name__ == "__main__":
         plt.ylabel("Total range (km)")
 
         plt.subplot(223)
-        plt.pcolormesh(dops,n.arange(n_rgo)*0.6,dB[0,1,:,:].T,vmin=db0)
+        plt.pcolormesh(dops,n.arange(n_rgo)*rg,dB[0,1,:,:].T,vmin=db0)
         cb=plt.colorbar()
         cb.set_label("SNR (dB)")
         plt.title("X Range aliased")
@@ -213,7 +219,7 @@ if __name__ == "__main__":
         plt.ylabel("Total range (km)")
 
         plt.subplot(224)
-        plt.pcolormesh(dops,n.arange(n_rgo)*0.6,dB[1,1,:,:].T,vmin=db0)
+        plt.pcolormesh(dops,n.arange(n_rgo)*rg,dB[1,1,:,:].T,vmin=db0)
         cb=plt.colorbar()
         cb.set_label("SNR (dB)")
         plt.title("Y Range aliased")
