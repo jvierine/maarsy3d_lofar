@@ -116,7 +116,11 @@ def resample(z,sr_in=3*195312.5,sr_out=0.5e6):
 def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=[[1,2,0],
                                                                                  [4,5,3],
                                                                                  [7,8,6],
-                                                                                 [10,11,9]]):
+                                                                                 [10,11,9],
+                                                                                 [13,14,12],
+                                                                                 [16,17,15],
+                                                                                 [19,20,18]]):
+                                                                    
 
     beamlets=n.array(beamlets)
     n_modules=beamlets.shape[0]
@@ -176,6 +180,7 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=
         for fi in range(n_frames):
             fi0=int(n.round(fi*n_ipp*samples_per_ipp+ti*n_frames*n_ipp*samples_per_ipp))
             for mi in range(n_modules):
+                print("frame %d module %d"%(fi,mi))
                 # read all ipps
                 n_read=int(n.ceil(n_ipp*samples_per_ipp))+10
 
@@ -185,10 +190,10 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=
                 # shift frequency
                 csin=n.exp(1j*2*n.pi*tv*dfreq)
                 x,y=d.read_ubeamlets(sample0+fi0,n_read,beamlets=beamlets[mi])
-                print(n_read)
-                print(n_beamlets)
-                print(len(tv))
-                print(len(x))
+#                print(n_read)
+ #               print(n_beamlets)
+  #              print(len(tv))
+   #             print(len(x))
 
                 x=resample(x*csin)
                 y=resample(y*csin)
@@ -216,9 +221,18 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=
 
         for xi in range(n_xspec):
             print("plotting phase")
-            plt.pcolormesh(n.angle())
+            plt.subplot(121)
+            plt.pcolormesh(n.transpose(n.angle(S[xi,0,0,:,:] + S[xi,1,0,:,:])),cmap="hsv")
+            plt.title("%d-%d"%(module_pairs[xi][0],module_pairs[xi][1]))
+            plt.colorbar()            
+            plt.subplot(122)
+            dB=10.0*n.log10(n.transpose(n.abs(S[xi,0,0,:,:] + S[xi,1,0,:,:])**2.0))
+            
+            dB=dB-n.median(dB)
+            plt.pcolormesh(dB,vmin=-3,vmax=20,cmap="turbo")
+            plt.colorbar()
             plt.tight_layout()
-            plt.savefig("maarsy3d_%03d_%d.png"%(xi,ti),dpi=150)
+            plt.savefig("maarsy3d_%03d_%06d.png"%(xi,ti),dpi=150)
             plt.close()
 
         if False:
@@ -275,7 +289,7 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=
             plt.savefig("maarsy3d_%03d_decoded-%05d.png"%(beamlets[0],ti),dpi=150)
             plt.close()
 
-        ho=h5py.File("spec_%03d_%06d.h5"%(beamlets[0],ti),"w")
+        ho=h5py.File("spec_%06d.h5"%(ti),"w")
         ho["ti"]=ti
         ho["S"]=S
         ho["t0"]=this_ut0
