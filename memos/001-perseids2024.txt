@@ -1,0 +1,84 @@
+The LOFAR configuration commands for the 2024 Perseids campaign.
+
+
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=2:13 --subbands=273:275
+--beamlets=0:2 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=14:25 --subbands=273:275
+--beamlets=3:5 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=26:37 --subbands=273:275
+--beamlets=6:8 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=38:49 --subbands=273:275
+--beamlets=9:11 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=50:61 --subbands=273:275
+--beamlets=12:14 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=62:73 --subbands=273:275
+--beamlets=15:17 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=74:85 --subbands=273:275
+--beamlets=18:20 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+
+# For SIMONe and Tromsø meteor radar systems. Point towards MAARSY.
+# This is for range-spread trail echoes.
+#
+
+
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=86:95,0,1
+--subbands=273:275 --beamlets=21:23 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=2:13 --subbands=166:167
+--beamlets=24:25 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=14:25 --subbands=166:167
+--beamlets=26:27 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=26:37 --subbands=166:167
+--beamlets=28:29 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=38:49 --subbands=166:167
+--beamlets=30:31 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=50:61 --subbands=166:167
+--beamlets=32:33 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=62:73 --subbands=166:167
+--beamlets=34:35 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=74:85 --subbands=166:167
+--beamlets=36:37 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=86:95,0,1
+--subbands=166:167 --beamlets=38:39 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=2:13 --subbands=155
+--beamlets=40 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=14:25 --subbands=155
+--beamlets=41 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=26:37 --subbands=155
+--beamlets=42 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=38:49 --subbands=155
+--beamlets=43 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=50:61 --subbands=155
+--beamlets=44 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=62:73 --subbands=155
+--beamlets=45 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=74:85 --subbands=155
+--beamlets=46 --digdir=1.0472,0.96,AZELGEO &
+sleep 3
+beamctl --antennaset=LBA_INNER --band=30_90 --rcus=86:95,0,1 --subbands=155
+--beamlets=47 --digdir=1.0472,0.96,AZELGEO &
+
+
+cd /mnt/data_storage/klp-data/; /usr/bin/klp_filewriter 10.220.81.204 4346
+-n 48 >> klp_`date "+\%Y-\%m-\%d"`.log 2>&1
