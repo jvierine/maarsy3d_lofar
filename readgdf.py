@@ -12,7 +12,11 @@ def freq(subband_idx):
     return(subband_idx*200e6/1024)
 
 class readgdf:
-    def __init__(self,dirname,n_per_file=390625):
+    def __init__(self,dirname):
+
+
+        
+        
 
         log=open("%s/sampler.log"%(dirname),"r")
         ll=log.readline();ll=log.readline();ll=log.readline();
@@ -26,7 +30,8 @@ class readgdf:
         if self.debug:
             print("initial timestamp %1.2f (unix) samples since 1970 %d"%(self.timestamp,self.samples_since_1970))
 
-        self.n_per_file=n_per_file
+        #self.n_per_file=n_per_file
+        # n_per_file=390625
         self.beamlet_dirs=glob.glob("%s/???"%(dirname))
         self.beamlet_dirs.sort()
         self.beamlets=[]
@@ -41,12 +46,17 @@ class readgdf:
         
         self.min_sample=[]
         self.max_sample=[]
-
+        self.n_per_file=-1#n_per_file
         for bi,bd in enumerate(self.beamlet_dirs):
             # extract beamlet number
             self.beamlets.append(int(re.search(".*/(...)$",bd).group(1)))
             xf=glob.glob("%s/x/data*gdf*"%(bd))
             xf.sort()
+
+            if self.n_per_file == -1:
+                z=self.read_raw(xf[0])
+                self.n_per_file=int(len(z)/2)
+                print("detected %d samples per file"%(self.n_per_file))
             filetables_x={}
             filenums_x=[]
             for fi in range(len(xf)):
@@ -112,7 +122,6 @@ class readgdf:
             # read bzipped files decompressing on the fly
             fh=bz2.BZ2File(fname,"r").read()
             x=n.frombuffer(fh,dtype="<i2")
-            #fh.close()
             return(x)
         else:
             print("file format now known")
@@ -152,9 +161,7 @@ class readgdf:
                 raise Exception
 
             if filen in xf.keys():
-                #n.fromfile(xf[filen],dtype="<i2")
                 x=self.read_raw(xf[filen])
-                print(len(x))
             else:
                 print("file %d not found!"%(filen))
                 x=n.zeros(2*self.n_per_file,dtype="<i2")
