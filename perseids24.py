@@ -86,6 +86,9 @@ def get_codes(interp=0,plot_filtered_code=False):
     return(codes)
 
 def resample(z,sr_in=3*195312.5,sr_out=0.5e6):
+    """
+    resample vector from sr_in to sr_out
+    """
     tin=n.arange(len(z))/sr_in
     n_in=len(z)
     T_max=n_in/sr_in
@@ -151,7 +154,7 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=
     ipp=1e-3
 #    n_beamlets=len(beamlets)
     sr=200e6/1024
-
+    sr3=sr*3
     samples_per_ipp=ipp*sr
     n_rg=int(n.floor(n_beamlets*samples_per_ipp))
 
@@ -184,8 +187,6 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=
                 # read all ipps
                 n_read=int(n.ceil(n_ipp*samples_per_ipp))+10
 
-                
-
                 tv=n.arange(n_beamlets*n_read)/sr/n_beamlets
                 # shift frequency
                 csin=n.exp(1j*2*n.pi*tv*dfreq)
@@ -203,12 +204,13 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=
                 codei=0
                 # number of ipps
                 for i in range(int(n_ipph)):
-                    # range aliased and not range aliased
+                    # complementary code decode by summing
                     for j in range(2):
-                        X[mi,0,0,i,:]=n.fft.ifft(codes_f[codei%2]*n.fft.fft(x[int(i0):(int(i0)+n_rgo)]))
-                        X[mi,1,0,i,:]=n.fft.ifft(codes_f[codei%2]*n.fft.fft(y[int(i0):(int(i0)+n_rgo)]))
-                        X[mi,0,1,i,:]=n.fft.ifft(codes_f[(codei+1)%2]*n.fft.fft(x[int(i0):(int(i0)+n_rgo)])) 
-                        X[mi,1,1,i,:]=n.fft.ifft(codes_f[(codei+1)%2]*n.fft.fft(y[int(i0):(int(i0)+n_rgo)]))
+                        # range aliased and not range aliased
+                        X[mi,0,0,i,:]+=n.fft.ifft(codes_f[codei%2]*n.fft.fft(x[int(i0):(int(i0)+n_rgo)]))
+                        X[mi,1,0,i,:]+=n.fft.ifft(codes_f[codei%2]*n.fft.fft(y[int(i0):(int(i0)+n_rgo)]))
+                        X[mi,0,1,i,:]+=n.fft.ifft(codes_f[(codei+1)%2]*n.fft.fft(x[int(i0):(int(i0)+n_rgo)])) 
+                        X[mi,1,1,i,:]+=n.fft.ifft(codes_f[(codei+1)%2]*n.fft.fft(y[int(i0):(int(i0)+n_rgo)]))
                         codei+=1
                         i0+=n_rgo
 
@@ -220,74 +222,63 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=
 
 
         for xi in range(n_xspec):
-            print("plotting phase")
-            plt.subplot(121)
-            plt.pcolormesh(n.transpose(n.angle(S[xi,0,0,:,:] + S[xi,1,0,:,:])),cmap="hsv")
-            plt.title("%d-%d"%(module_pairs[xi][0],module_pairs[xi][1]))
+            plt.figure(figsize=(12,12))
+            plt.subplot(221)
+            an0=0.0#n.median(S[xi,0,0,:,:].flatten())
+            an1=0.0#n.median(S[xi,1,0,:,:].flatten())
+            print(an0)
+            print(an1)            
+            #            dops,
+            rgv=n.arange(n_rgo)*rg + 40 + 150
+            plt.pcolormesh(dops,rgv,n.transpose(n.angle( (S[xi,0,0,:,:]-an0) + (S[xi,1,0,:,:]-an1))),cmap="hsv")
+            plt.xlim([-50,50])
+
+            plt.xlabel("Doppler (Hz)")
+            plt.ylabel("Total range (km)")            
+            plt.title("%s %d-%d"%(stuffr.unix2datestr(this_ut0),module_pairs[xi][0],module_pairs[xi][1]))
             plt.colorbar()            
-            plt.subplot(122)
-            dB=10.0*n.log10(n.transpose(n.abs(S[xi,0,0,:,:] + S[xi,1,0,:,:])**2.0))
+            plt.subplot(222)
+            an0=0.0#n.median(S[xi,0,1,:,:].flatten())
+            an1=0.0#n.median(S[xi,1,1,:,:].flatten())
+            
+#            an0=n.median(n.mean(S[xi,0,1,:,:],axis=1))
+ #           an1=n.median(n.mean(S[xi,1,1,:,:],axis=1))
+            print(an0)
+            print(an1)            
+            #            dops,
+            rgv=n.arange(n_rgo)*rg  + 40#+ 150
+            plt.pcolormesh(dops,rgv,n.transpose(n.angle( (S[xi,0,1,:,:]-an0) + (S[xi,1,1,:,:]-an1))),cmap="hsv")
+            plt.xlim([-50,50])
+            plt.xlabel("Doppler (Hz)")
+            plt.ylabel("Total range (km)")            
+#            plt.title("%s %d-%d"%(stuffr.unix2datestr(this_ut0),module_pairs[xi][0],module_pairs[xi][1]))
+            plt.colorbar()            
+            plt.subplot(223)
+            dB=10.0*n.log10(n.transpose(n.abs(S[xi,0,0,:,:] + S[xi,1,0,:,:])))
             
             dB=dB-n.median(dB)
-            plt.pcolormesh(dB,vmin=-3,vmax=20,cmap="turbo")
-            plt.colorbar()
+            rgv=n.arange(n_rgo)*rg + 40 + 150
+            plt.pcolormesh(dops,rgv,dB,vmin=-3,vmax=30,cmap="turbo")
+            plt.xlim([-50,50])            
+            plt.xlabel("Doppler (Hz)")
+            plt.ylabel("Total range (km)")
+            cb=plt.colorbar()
+            cb.set_label("dB")
+            plt.subplot(224)
+            dB=10.0*n.log10(n.transpose(n.abs(S[xi,0,1,:,:] + S[xi,1,1,:,:])))
+            
+            dB=dB-n.median(dB)
+            rgv=n.arange(n_rgo)*rg + 40
+            plt.pcolormesh(dops,rgv,dB,vmin=-3,vmax=30,cmap="turbo")
+            plt.xlim([-50,50])            
+            plt.xlabel("Doppler (Hz)")
+            plt.ylabel("Total range (km)")
+            cb=plt.colorbar()
+            cb.set_label("dB")
             plt.tight_layout()
             plt.savefig("maarsy3d_%03d_%06d.png"%(xi,ti),dpi=150)
             plt.close()
 
-        if False:
-            snr=n.sum(n.abs(S)**2.0,axis=0)
-            #        snr=n.copy(S)
-            nfloorx=n.nanmedian(snr[0,:,:,:])
-            nfloory=n.nanmedian(snr[1,:,:,:])    
-            snr[0,:,:]=(snr[0,:,:]-nfloorx)/nfloorx
-            snr[1,:,:]=(snr[1,:,:]-nfloory)/nfloory    
-
-            dB=10.0*n.log10(snr)
-
-            db0,db1=n.nanpercentile(dB.flatten(),[5,99])
-            dB[snr<=0]=-60
-
-            plt.figure(figsize=(2*8,2*6.4))
-            plt.subplot(221)
-            plt.pcolormesh(dops,n.arange(n_rgo)*rg,dB[0,0,:,:].T,vmin=db0)
-            cb=plt.colorbar()
-            cb.set_label("SNR (dB)")
-            plt.xlim([-50,50])
-            plt.title("X Not aliased (nfloorx/nfloory=%1.2g)"%(nfloorx/nfloory))
-            plt.xlabel("Doppler (Hz)")
-            plt.ylabel("Total range (km)")
-
-            plt.subplot(222)
-            plt.pcolormesh(dops,n.arange(n_rgo)*rg,dB[1,0,:,:].T,vmin=db0)
-            cb=plt.colorbar()
-            cb.set_label("SNR (dB)")
-            plt.xlim([-50,50])
-            plt.title("Y Not aliased %s"%(stuffr.unix2datestr(this_ut0)))
-            plt.xlabel("Doppler (Hz)")
-            plt.ylabel("Total range (km)")
-
-            plt.subplot(223)
-            plt.pcolormesh(dops,n.arange(n_rgo)*rg,dB[0,1,:,:].T,vmin=db0)
-            cb=plt.colorbar()
-            cb.set_label("SNR (dB)")
-            plt.title("X Range aliased")
-            plt.xlim([-50,50])    
-            plt.xlabel("Doppler (Hz)")
-            plt.ylabel("Total range (km)")
-
-            plt.subplot(224)
-            plt.pcolormesh(dops,n.arange(n_rgo)*rg,dB[1,1,:,:].T,vmin=db0)
-            cb=plt.colorbar()
-            cb.set_label("SNR (dB)")
-            plt.title("Y Range aliased")
-            plt.xlim([-50,50])    
-            plt.xlabel("Doppler (Hz)")
-            plt.ylabel("Total range (km)")
-
-            plt.tight_layout()
-            plt.savefig("maarsy3d_%03d_decoded-%05d.png"%(beamlets[0],ti),dpi=150)
-            plt.close()
 
         ho=h5py.File("spec_%06d.h5"%(ti),"w")
         ho["ti"]=ti
