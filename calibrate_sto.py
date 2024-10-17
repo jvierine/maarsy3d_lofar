@@ -56,13 +56,14 @@ def find_angle(u,v,S,kvec_x,kvec_y,l,m,mask=1.0):
 
 xyz,xyza,latlonh=sa.get_antenna_xyz()
 
+
 # ecef positions (m) of antenna modules
 ecef=n.zeros([latlonh.shape[0],3])
 for ai in range(latlonh.shape[0]):
     ecef[ai,:]=jcoord.geodetic2ecef(latlonh[ai,0],latlonh[ai,1],latlonh[ai,2])
     print(ecef[ai,:])
 
-
+n_modules=ecef.shape[0]
 
 # maarsy position
 coords={"lat":69.29836217360676,
@@ -101,15 +102,38 @@ plt.title("uv-coverage")
 plt.xlabel("East-west baseline (m)")
 plt.ylabel("North-south baseline (m)")
 plt.savefig("memos/004-baselines.png")
-plt.show()
-print(mp.shape)
-exit(0)
+plt.close()
+#plt.show()
+#print(mp.shape)
+#exit(0)
 
+
+
+def find_cal(xc,xhat0=n.zeros(n_modules-1)):
+    phase_cal=n.zeros(n_modules)
+    m=n.exp(1j*n.angle(xc))
+    def ss(x):
+        phase_cal[1:len(phase_cal)]=x
+        MF=0.0+0.0j
+        for i in range(xc.shape[0]):
+            MF+=m[i]*n.exp(1j*(-phase_cal[mp[i,0]]+phase_cal[mp[i,1]]))*n.exp(-1j*(ground_k[0]*vecs[i,0] + ground_k[1]*vecs[i,1] + ground_k[2]*vecs[i,2]))
+        #print(MF)
+        return(-n.abs(MF))
+    import scipy.optimize as so
+    xhat=so.fmin(ss,xhat0,disp=False)
+    xhat=so.fmin(ss,xhat,disp=False)
+    xhat=so.fmin(ss,xhat,disp=False)
+    xhat=n.mod(xhat,2*n.pi)
+    print(ss(xhat),"%1.2f %1.2f %1.2f %1.2f %1.2f %1.2f %1.2f"%(xhat[0],xhat[1],xhat[2],xhat[3],xhat[4],xhat[5],xhat[6]))
+    return(xhat)
+    
 
 #24-29, 51
 #14,45
 #45,55
-for f in fl:
+cal=n.zeros([n_modules-1,2])
+cals=n.zeros([len(fl),len(cal),2])
+for fi,f in enumerate(fl):
     h=h5py.File(f,"r")
     S=h["S"][()]
     if "module_pairs" not in h.keys():
@@ -119,9 +143,40 @@ for f in fl:
     ci=1
     pwr=n.abs(S[0,0,ci,:,:])+n.abs(S[0,1,ci,:,:])
     maarsy_rgi=n.argmax(pwr[51,:])
-    print(maarsy_rgi)
-
+    if False:
+        for i in range(S.shape[0]):
+            plt.plot(S[i,0,ci,:,maarsy_rgi].real)
+            plt.plot(S[i,0,ci,:,maarsy_rgi].imag)
+            plt.show()
     
+        plt.plot(S[:,0,ci,51,maarsy_rgi].real)
+        plt.plot(S[:,0,ci,51,maarsy_rgi].imag)
+        plt.plot(n.abs(S[:,0,ci,51,maarsy_rgi]))
+        plt.xlabel("Baseline")
+        plt.ylabel("Ground path XC")
+        plt.show()
+
+    cal[:,0]=find_cal(S[:,0,ci,51,maarsy_rgi],cal[:,0])
+    cals[fi,:,0]=cal[:,0]
+    cal[:,1]=find_cal(S[:,1,ci,51,maarsy_rgi],cal[:,1])
+    cals[fi,:,1]=cal[:,1]
+#    print(maarsy_rgi)
     h.close()
 
+
+plt.subplot(211)
+plt.pcolormesh(cals[:,:,0],cmap="hsv")
+plt.xlabel("Antenna module")
+plt.title("Pol 0")
+plt.ylabel("Time")
+cb=plt.colorbar()
+cb.set_label("Phase calibration")
+plt.subplot(212)
+plt.pcolormesh(cals[:,:,1],cmap="hsv")
+plt.title("Pol 1")
+plt.xlabel("Antenna module")
+plt.ylabel("Time")
+cb=plt.colorbar()
+cb.set_label("Phase calibration")
+plt.show()
     
