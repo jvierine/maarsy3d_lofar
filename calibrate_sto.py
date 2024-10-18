@@ -133,6 +133,7 @@ def find_cal(xc,xhat0=n.zeros(n_modules-1)):
 #45,55
 cal=n.zeros([n_modules-1,2])
 cals=n.zeros([len(fl),len(cal),2])
+bgs=n.zeros([len(fl),int(n_modules*(n_modules-1)/2),2],dtype=n.complex64)
 for fi,f in enumerate(fl):
     h=h5py.File(f,"r")
     S=h["S"][()]
@@ -143,6 +144,13 @@ for fi,f in enumerate(fl):
     ci=1
     pwr=n.abs(S[0,0,ci,:,:])+n.abs(S[0,1,ci,:,:])
     maarsy_rgi=n.argmax(pwr[51,:])
+
+    for pi in range(S.shape[0]):
+        bgs[fi,pi,0]=n.mean(S[pi,0,ci,:,100:200])
+        bgs[fi,pi,1]=n.mean(S[pi,1,ci,:,100:200])
+#    n.mean(S[,0,ci,:,100:200])
+ #   plt.pcolormesh(10.0*n.log10(pwr))
+  #  plt.show()
     if False:
         for i in range(S.shape[0]):
             plt.plot(S[i,0,ci,:,maarsy_rgi].real)
@@ -162,6 +170,38 @@ for fi,f in enumerate(fl):
     cals[fi,:,1]=cal[:,1]
 #    print(maarsy_rgi)
     h.close()
+    
+plt.subplot(211)
+plt.pcolormesh(n.angle(bgs[:,:,0]),cmap="hsv")
+plt.xlabel("Antenna module")
+plt.title("Pol 0")
+plt.ylabel("Time")
+cb=plt.colorbar()
+cb.set_label("RFI phase")
+plt.subplot(212)
+plt.pcolormesh(n.angle(bgs[:,:,1]),cmap="hsv")
+plt.xlabel("Antenna module")
+plt.title("Pol 1")
+plt.ylabel("Time")
+cb=plt.colorbar()
+cb.set_label("RFI phase")
+plt.show()
+
+plt.subplot(211)
+plt.pcolormesh(n.abs(bgs[:,:,0]))
+plt.xlabel("Antenna module")
+plt.title("Pol 0")
+plt.ylabel("Time")
+cb=plt.colorbar()
+cb.set_label("RFI power")
+plt.subplot(212)
+plt.pcolormesh(n.abs(bgs[:,:,1]))
+plt.xlabel("Antenna module")
+plt.title("Pol 1")
+plt.ylabel("Time")
+cb=plt.colorbar()
+cb.set_label("RFI power")
+plt.show()
 
 
 plt.subplot(211)
