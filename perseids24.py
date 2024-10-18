@@ -116,8 +116,8 @@ def resample(z,sr_in=3*195312.5,sr_out=0.5e6):
     return(zfun(tout))
 
 
-def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=[[1,2,0],
-                                                                                 [4,5,3],
+def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=[[1,2,0],    # mod 1
+                                                                                 [4,5,3],    #     2
                                                                                  [7,8,6],
                                                                                  [10,11,9],
                                                                                  [13,14,12],
@@ -153,7 +153,7 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=
 
     ipp=1e-3
 #    n_beamlets=len(beamlets)
-    sr=200e6/1024
+    sr=200e6/1024.0
     sr3=sr*3
     samples_per_ipp=ipp*sr
     n_rg=int(n.floor(n_beamlets*samples_per_ipp))
@@ -167,13 +167,22 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=
     # use only these indices
     fidx=n.where(n.abs(dops)<50)[0]
 
-    n_timesteps=int(n.floor((b[1]-b[0])/(n_ipp*n_frames*samples_per_ipp)))
+    
+  
 
     #ut0=1719568825.962887763977
-    # start at next full second
+    # start at the next 16 ipp boundary
+    
     ut0 = n.ceil(d.timestamp)
-    sample0= int(ut0*d.sample_rate)
-
+    # every 16 ipps, there is an integer number of
+    # samples for 16 IPPs in a sample-rate of 200e6/1024
+    n_16 = int(n.ceil(d.timestamp/16e-3))
+    sample0=n_16*3125
+    
+#    sample0= int(ut0*d.sample_rate)
+    
+    n_timesteps=int(n.floor((b[1]-sample0)/(n_ipp*n_frames*samples_per_ipp)))
+  
     ipp=1e-3
     for ti in range(rank,n_timesteps,size):
         this_ut0=ti*n_ipp*ipp*n_frames + ut0
@@ -181,7 +190,11 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=
 
         X=n.zeros([n_modules,2,2,n_ipph,n_rgo],dtype=n.complex64)
         for fi in range(n_frames):
+            # as long as n_ipp is a multiple of 16 ipps, then this will be an integer!
             fi0=int(n.round(fi*n_ipp*samples_per_ipp+ti*n_frames*n_ipp*samples_per_ipp))
+
+
+            print("fi %d"%(fi0))
             for mi in range(n_modules):
                 print("frame %d module %d"%(fi,mi))
                 # read all ipps
@@ -229,7 +242,7 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=
             print(an0)
             print(an1)            
             #            dops,
-            rgv=n.arange(n_rgo)*rg + 40 + 150
+            rgv=n.arange(n_rgo)*rg + 150
             plt.pcolormesh(dops,rgv,n.transpose(n.angle( (S[xi,0,0,:,:]-an0) + (S[xi,1,0,:,:]-an1))),cmap="hsv")
             plt.xlim([-50,50])
 
@@ -246,7 +259,7 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=
             print(an0)
             print(an1)            
             #            dops,
-            rgv=n.arange(n_rgo)*rg  + 40#+ 150
+            rgv=n.arange(n_rgo)*rg#  + 40#+ 150
             plt.pcolormesh(dops,rgv,n.transpose(n.angle( (S[xi,0,1,:,:]-an0) + (S[xi,1,1,:,:]-an1))),cmap="hsv")
             plt.xlim([-50,50])
             plt.xlabel("Doppler (Hz)")
@@ -257,7 +270,7 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=
             dB=10.0*n.log10(n.transpose(n.abs(S[xi,0,0,:,:] + S[xi,1,0,:,:])))
             
             dB=dB-n.median(dB)
-            rgv=n.arange(n_rgo)*rg + 40 + 150
+            rgv=n.arange(n_rgo)*rg  + 150
             plt.pcolormesh(dops,rgv,dB,vmin=-3,vmax=30,cmap="turbo")
             plt.xlim([-50,50])            
             plt.xlabel("Doppler (Hz)")
@@ -268,7 +281,7 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=
             dB=10.0*n.log10(n.transpose(n.abs(S[xi,0,1,:,:] + S[xi,1,1,:,:])))
             
             dB=dB-n.median(dB)
-            rgv=n.arange(n_rgo)*rg + 40
+            rgv=n.arange(n_rgo)*rg #+ 40
             plt.pcolormesh(dops,rgv,dB,vmin=-3,vmax=30,cmap="turbo")
             plt.xlim([-50,50])            
             plt.xlabel("Doppler (Hz)")
@@ -276,15 +289,18 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=
             cb=plt.colorbar()
             cb.set_label("dB")
             plt.tight_layout()
-            plt.savefig("maarsy3d_%03d_%06d.png"%(xi,ti),dpi=150)
+            plt.savefig("maarsy3d_%03d_%06d.png"%(xi,this_ut0),dpi=150)
             plt.close()
 
 
-        ho=h5py.File("spec_%06d.h5"%(ti),"w")
+        ho=h5py.File("spec_%06d.h5"%(this_ut0),"w")
+        ho["unix_idx0"]=ti*n_ipp*ipp*n_frames+sample0#idx0#b[0]
+        ho["n_ipph"]=n_ipph
         ho["ti"]=ti
-        ho["S"]=S
+        ho["S"]=S[:,:,:,fidx,:]
+        ho["module_pairs"]=module_pairs
         ho["t0"]=this_ut0
-        ho["dops"]=dops
+        ho["dops"]=dops[fidx]
         ho["n_rgo"]=n_rgo
         ho["beamlets"]=beamlets
         ho.close()
