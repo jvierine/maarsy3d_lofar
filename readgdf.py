@@ -135,16 +135,17 @@ class readgdf:
             print("read %d samples"%(N))
         xf=self.beamlet_x_filetables[self.beamlet_idx_to_beamletdir[beamlet]]
         yf=self.beamlet_y_filetables[self.beamlet_idx_to_beamletdir[beamlet]]
+
         
         filen=int(n.floor(i0/self.n_per_file))
         if self.debug:
             print(xf[filen])
 
         # first sample index
-        idx0=i0-int(n.floor(i0/self.n_per_file))*self.n_per_file
-
+        idx0=i0-filen*self.n_per_file
+        
         n_left_in_file=self.n_per_file-idx0
-
+        
         if self.debug:
             print(idx0)
             print(n_left_in_file)
@@ -166,8 +167,6 @@ class readgdf:
                 print("file %d not found!"%(filen))
                 x=n.zeros(2*self.n_per_file,dtype="<i2")
             if filen in yf.keys():
-                #x=self.read_raw(xf[filen])                
-                #y=n.fromfile(yf[filen],dtype="<i2")
                 y=self.read_raw(yf[filen])                
             else:
                 print("file %d not found!"%(filen))

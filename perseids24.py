@@ -6,7 +6,7 @@ import h5py
 import stuffr
 import scipy.signal as ss
 import itertools
-
+import os
 #
 # Analyze LOFAR measurements of MAARSY using the 16-bit complementary code,
 # 1 ms IPP and 2 us bit length (meso17)
@@ -116,15 +116,18 @@ def resample(z,sr_in=3*195312.5,sr_out=0.5e6):
     return(zfun(tout))
 
 
-def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=[[1,2,0],    # mod 1
-                                                                                 [4,5,3],    #     2
-                                                                                 [7,8,6],
-                                                                                 [10,11,9],
-                                                                                 [13,14,12],
-                                                                                 [16,17,15],
-                                                                                 [19,20,18]]):
+def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",
+                output_dir="./output",
+                beamlets=[[1,2,0],    # mod 1
+                          [4,5,3],    #     2
+                          [7,8,6],
+                          [10,11,9],
+                          [13,14,12],
+                          [16,17,15],
+                          [19,20,18]]):
                                                                     
 
+    os.system("mkdir -p %s"%(output_dir))
     beamlets=n.array(beamlets)
     n_modules=beamlets.shape[0]
     n_beamlets=beamlets.shape[1]
@@ -289,11 +292,11 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",beamlets=
             cb=plt.colorbar()
             cb.set_label("dB")
             plt.tight_layout()
-            plt.savefig("maarsy3d_%03d_%06d.png"%(xi,this_ut0),dpi=150)
+            plt.savefig("%s/maarsy3d_%03d_%06d.png"%(output_dir,xi,this_ut0),dpi=150)
             plt.close()
 
 
-        ho=h5py.File("spec_%06d.h5"%(this_ut0),"w")
+        ho=h5py.File("%s/spec_%06d.h5"%(output_dir,this_ut0),"w")
         ho["unix_idx0"]=ti*n_ipp*ipp*n_frames+sample0#idx0#b[0]
         ho["n_ipph"]=n_ipph
         ho["ti"]=ti
@@ -334,7 +337,9 @@ if __name__ == "__main__":
 #    explore_data()
     dirlist=glob.glob("/data2/perseids2024/data-*")
     dirlist.sort()
+
+    output_dir="./output"
     for d in dirlist:
-        process_dir(d)
+        process_dir(d,output_dir)
     
 

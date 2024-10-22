@@ -1,24 +1,30 @@
 The LOFAR configuration commands for the 2024 Perseids campaign.
 
-
+# module 1
 beamctl --antennaset=LBA_INNER --band=30_90 --rcus=2:13 --subbands=273:275
 --beamlets=0:2 --digdir=1.0472,0.96,AZELGEO &
 sleep 3
+# module 2
 beamctl --antennaset=LBA_INNER --band=30_90 --rcus=14:25 --subbands=273:275
 --beamlets=3:5 --digdir=1.0472,0.96,AZELGEO &
 sleep 3
+# module 3
 beamctl --antennaset=LBA_INNER --band=30_90 --rcus=26:37 --subbands=273:275
 --beamlets=6:8 --digdir=1.0472,0.96,AZELGEO &
 sleep 3
+# module 4
 beamctl --antennaset=LBA_INNER --band=30_90 --rcus=38:49 --subbands=273:275
 --beamlets=9:11 --digdir=1.0472,0.96,AZELGEO &
 sleep 3
+# module 5
 beamctl --antennaset=LBA_INNER --band=30_90 --rcus=50:61 --subbands=273:275
 --beamlets=12:14 --digdir=1.0472,0.96,AZELGEO &
 sleep 3
+# module 6
 beamctl --antennaset=LBA_INNER --band=30_90 --rcus=62:73 --subbands=273:275
 --beamlets=15:17 --digdir=1.0472,0.96,AZELGEO &
 sleep 3
+# module 7
 beamctl --antennaset=LBA_INNER --band=30_90 --rcus=74:85 --subbands=273:275
 --beamlets=18:20 --digdir=1.0472,0.96,AZELGEO &
 sleep 3
