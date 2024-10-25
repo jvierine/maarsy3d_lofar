@@ -149,7 +149,7 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",
 
 #    n_modules=len(beamlets)
     # number of cross-spectra
-    n_xspec = int(n_modules*(n_modules-1)/2)
+
 
     module_pairs=list(itertools.combinations(n.arange(n_modules),2))
     # self-combinations
@@ -157,7 +157,7 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",
         module_pairs.append([i,i])
     
     module_pairs=n.array(module_pairs)
-    
+    n_xspec = module_pairs.shape[0]#int(n_modules*(n_modules-1)/2)    
     d=readgdf.readgdf(dirname)
     b=d.get_ubounds(beamlets[0,0])
 
