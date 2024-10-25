@@ -124,7 +124,9 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",
                           [10,11,9],
                           [13,14,12],
                           [16,17,15],
-                          [19,20,18]]):
+                          [19,20,18],
+                          [22,23,21]
+                          ]):
                                                                     
 
     os.system("mkdir -p %s"%(output_dir))
@@ -148,8 +150,13 @@ def process_dir(dirname="/data1/maarsy3d/imaging/data-1719924302.3445",
 #    n_modules=len(beamlets)
     # number of cross-spectra
     n_xspec = int(n_modules*(n_modules-1)/2)
+
+    module_pairs=list(itertools.combinations(n.arange(n_modules),2))
+    # self-combinations
+    for i in range(n_modules):
+        module_pairs.append([i,i])
     
-    module_pairs=n.array(list(itertools.combinations(n.arange(n_modules),2)))
+    module_pairs=n.array(module_pairs)
     
     d=readgdf.readgdf(dirname)
     b=d.get_ubounds(beamlets[0,0])
@@ -333,12 +340,22 @@ def explore_data():
     
 
 if __name__ == "__main__":
-    import glob    
-#    explore_data()
-    dirlist=glob.glob("/data2/perseids2024/data-*")
+    import glob
+    import sys
+
+    if len(sys.argv) != 3:
+        print("give two arguments. the location of the data directory and the directory to store output data")
+        print("e.g.,")
+        print("mpirun -np 24 python3 perseids24.py /data2/perseids2024 ./output")
+        exit(0)
+    data_dir=sys.argv[1]
+    output_dir=sys.argv[2]
+
+
+    dirlist=glob.glob("%s/data-*"%(data_dir))
     dirlist.sort()
 
-    output_dir="./output"
+#    output_dir="./output"
     for d in dirlist:
         process_dir(d,output_dir)
     
